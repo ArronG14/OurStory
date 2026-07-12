@@ -1,0 +1,21 @@
+{
+  "slug": "01-the-beginning",
+  "order": 1,
+  "title": "The Beginning",
+  "dateRange": "2015 – 2017",
+  "location": "2 Amanda Court",
+  "openingSentence": "It started on an ordinary street, on an ordinary day, except it wasn't.",
+  "typedTextMode": "full",
+  "reflection": "We didn't know it yet, but everything after this was going to be different.",
+  "palette": {
+    "background": "#0b0f14",
+    "backgroundSecondary": "#10151b",
+    "foreground": "#f4ede1",
+    "foregroundMuted": "#a9b0b8",
+    "accent": "#cba15c"
+  },
+  "interfaceDensity": "full",
+  "interactionDensity": "high",
+  "transitionType": "crossfade",
+  "song": { "title": "Placeholder Song One", "artist": "Placeholder Artist", "src": null }
+}

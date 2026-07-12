@@ -1,0 +1,20 @@
+{
+  "slug": "02-growing-together",
+  "order": 2,
+  "title": "Growing Together",
+  "dateRange": "2018 – 2020",
+  "openingSentence": "Life stopped being separate and started being ours.",
+  "typedTextMode": "abbreviated",
+  "reflection": "Every year added a room to the life we were building.",
+  "palette": {
+    "background": "#141009",
+    "backgroundSecondary": "#1a140b",
+    "foreground": "#f4ede1",
+    "foregroundMuted": "#b8ac96",
+    "accent": "#cba15c"
+  },
+  "interfaceDensity": "full",
+  "interactionDensity": "high",
+  "transitionType": "crossfade",
+  "song": { "title": "Placeholder Song Two", "artist": "Placeholder Artist", "src": null }
+}

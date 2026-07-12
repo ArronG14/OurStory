@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --font-serif: var(--font-editorial);
+  --font-sans: var(--font-interface);
+  --font-hand: var(--font-letter);
+
+  --ease-natural: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --charcoal-950: #0b0b0c;
+  --gold-400: #cba15c;
+  --off-white: #f4ede1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--charcoal-950);
+  color: var(--off-white);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+::selection {
+  background: var(--gold-400);
+  color: var(--charcoal-950);
+}
+
+button {
+  font-family: inherit;
+}
+
+.font-editorial {
+  font-family: var(--font-serif);
+}
+
+.font-hand {
+  font-family: var(--font-hand);
+}

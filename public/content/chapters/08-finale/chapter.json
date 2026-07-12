@@ -1,0 +1,20 @@
+{
+  "slug": "08-finale",
+  "order": 8,
+  "title": "Finale",
+  "dateRange": "",
+  "openingSentence": "",
+  "typedTextMode": "none",
+  "reflection": "",
+  "palette": {
+    "background": "#000000",
+    "backgroundSecondary": "#000000",
+    "foreground": "#f4ede1",
+    "foregroundMuted": "#8a8478",
+    "accent": "#cba15c"
+  },
+  "interfaceDensity": "none",
+  "interactionDensity": "none",
+  "transitionType": "hold-to-black",
+  "song": { "title": "", "artist": "", "src": null }
+}

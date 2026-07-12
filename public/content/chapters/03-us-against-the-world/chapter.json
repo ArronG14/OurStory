@@ -1,0 +1,20 @@
+{
+  "slug": "03-us-against-the-world",
+  "order": 3,
+  "title": "Us Against The World",
+  "dateRange": "2020 – June 2021",
+  "openingSentence": "The world slowed down. We didn't.",
+  "typedTextMode": "abbreviated",
+  "reflection": "Double workouts. Double shots. The same four walls, and somehow never tired of each other.",
+  "palette": {
+    "background": "#090a0c",
+    "backgroundSecondary": "#0d0f12",
+    "foreground": "#e9e6e0",
+    "foregroundMuted": "#7d838c",
+    "accent": "#8f9aa8"
+  },
+  "interfaceDensity": "reduced",
+  "interactionDensity": "low",
+  "transitionType": "hold-to-black",
+  "song": { "title": "Placeholder Song Three", "artist": "Placeholder Artist", "src": null }
+}
