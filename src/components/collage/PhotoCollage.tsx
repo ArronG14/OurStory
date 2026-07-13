@@ -42,10 +42,13 @@ export function PhotoCollage({
   const [pageIndex, setPageIndex] = useState(0);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [preparedSrcs, setPreparedSrcs] = useState<Set<string>>(() => new Set());
+  const [renderedReadySrcs, setRenderedReadySrcs] = useState<Set<string>>(() => new Set());
+  const [failedSrcs, setFailedSrcs] = useState<Set<string>>(() => new Set());
   const preloadPromises = useRef(new Map<string, Promise<void>>());
   const safePageIndex = Math.min(pageIndex, Math.max(0, pages.length - 1));
   const activePage = pages[safePageIndex] ?? pages[0];
   const nextPage = pages[safePageIndex + 1];
+  const isMobileViewport = viewport.width > 0 && viewport.width < 640;
 
   useEffect(() => {
     const element = containerRef.current;
@@ -86,21 +89,50 @@ export function PhotoCollage({
     });
   }, []);
 
+  const markRenderedReady = useCallback((src: string) => {
+    setRenderedReadySrcs((current) => {
+      if (current.has(src)) return current;
+      const next = new Set(current);
+      next.add(src);
+      return next;
+    });
+  }, []);
+
+  const markFailed = useCallback((src: string) => {
+    setFailedSrcs((current) => {
+      if (current.has(src)) return current;
+      const next = new Set(current);
+      next.add(src);
+      return next;
+    });
+  }, []);
+
+  const displaySrcFor = useCallback((item: MediaItem) => {
+    if (item.type !== "photo") return item.src;
+    return isMobileViewport && item.mobileSrc ? item.mobileSrc : item.src;
+  }, [isMobileViewport]);
+
   const preloadMedia = useCallback((item: MediaItem) => {
-    const existing = preloadPromises.current.get(item.src);
+    const src = displaySrcFor(item);
+    const existing = preloadPromises.current.get(src);
     if (existing) return existing;
 
-    const promise = new Promise<void>((resolve) => {
+    let loaded = false;
+    const promise = new Promise<boolean>((resolve) => {
       if (item.type === "photo") {
         const image = new Image();
-        image.decoding = "sync";
+        image.decoding = "async";
         image.onload = () => {
+          loaded = true;
           const decode = image.decode?.();
-          if (decode) decode.catch(() => undefined).finally(resolve);
-          else resolve();
+          if (decode) decode.catch(() => undefined).finally(() => resolve(true));
+          else resolve(true);
         };
-        image.onerror = () => resolve();
-        image.src = item.src;
+        image.onerror = () => {
+          markFailed(src);
+          resolve(false);
+        };
+        image.src = src;
         return;
       }
 
@@ -110,22 +142,28 @@ export function PhotoCollage({
       video.playsInline = true;
 
       const finish = () => {
+        loaded = !video.error;
+        if (!loaded) markFailed(src);
         video.removeEventListener("loadeddata", finish);
         video.removeEventListener("canplay", finish);
+        video.removeEventListener("loadedmetadata", finish);
         video.removeEventListener("error", finish);
-        resolve();
+        resolve(loaded);
       };
 
       video.addEventListener("loadeddata", finish, { once: true });
       video.addEventListener("canplay", finish, { once: true });
+      video.addEventListener("loadedmetadata", finish, { once: true });
       video.addEventListener("error", finish, { once: true });
-      video.src = item.src;
+      video.src = src;
       video.load();
-    }).then(() => markPrepared(item.src));
+    }).then((didLoad) => {
+      if (didLoad) markPrepared(src);
+    });
 
-    preloadPromises.current.set(item.src, promise);
+    preloadPromises.current.set(src, promise);
     return promise;
-  }, [markPrepared]);
+  }, [displaySrcFor, markFailed, markPrepared]);
 
   const openPreparedMedia = useCallback((item: MediaItem, index: number) => {
     preloadMedia(item).finally(() => setFocusedIndex(index));
@@ -154,6 +192,10 @@ export function PhotoCollage({
     const latestSlotDelay = activePage?.slots.reduce((latest, slot) => Math.max(latest, slot.delay), 0) ?? 0;
 
     if (!hasMeasuredViewport) return undefined;
+    const activeSources = (activePage?.items ?? []).map(displaySrcFor);
+    if (activeSources.length === 0 || activeSources.some((src) => !renderedReadySrcs.has(src))) {
+      return undefined;
+    }
 
     Promise.all((activePage?.items ?? []).map(preloadMedia)).finally(() => {
       if (cancelled) return;
@@ -164,7 +206,7 @@ export function PhotoCollage({
       cancelled = true;
       if (timer) window.clearTimeout(timer);
     };
-  }, [activePage, hasMeasuredViewport, onReady, preloadMedia]);
+  }, [activePage, displaySrcFor, hasMeasuredViewport, onReady, preloadMedia, renderedReadySrcs]);
 
   return (
     <div
@@ -220,8 +262,12 @@ export function PhotoCollage({
               direction={direction}
               focused={focusedIndex === index}
               dimmed={focusedIndex !== null && focusedIndex !== index}
-              prepared={preparedSrcs.has(item.src)}
+              prepared={preparedSrcs.has(displaySrcFor(item))}
+              displaySrc={displaySrcFor(item)}
+              failed={failedSrcs.has(displaySrcFor(item))}
               mood={mood}
+              onMediaReady={() => markRenderedReady(displaySrcFor(item))}
+              onMediaFailed={() => markFailed(displaySrcFor(item))}
               onOpen={() => openPreparedMedia(item, index)}
               onClose={() => setFocusedIndex(null)}
             />

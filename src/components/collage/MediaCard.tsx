@@ -15,6 +15,10 @@ interface MediaCardProps {
   dimmed: boolean;
   prepared: boolean;
   mood?: "standard" | "nyla";
+  displaySrc?: string;
+  failed?: boolean;
+  onMediaReady?: () => void;
+  onMediaFailed?: () => void;
   onOpen: () => void;
   onClose: () => void;
 }
@@ -27,6 +31,10 @@ export function MediaCard({
   dimmed,
   prepared,
   mood = "standard",
+  displaySrc = item.src,
+  failed = false,
+  onMediaReady,
+  onMediaFailed,
   onOpen,
   onClose,
 }: MediaCardProps) {
@@ -56,7 +64,7 @@ export function MediaCard({
     <motion.div
       layout
       className={`absolute rounded-[2px] border border-[#f4ede1]/35 bg-[#f4ede1] p-[3px] ${
-        focused ? "cursor-zoom-out shadow-2xl" : prepared ? "cursor-zoom-in" : "cursor-default"
+        focused ? "cursor-zoom-out shadow-2xl" : prepared && !failed ? "cursor-zoom-in" : "cursor-default"
       } ${tone === "young" ? "shadow-lg" : "shadow-2xl"}`}
       style={
         focused
@@ -82,7 +90,7 @@ export function MediaCard({
               clipPath: "inset(0 0 0 0)",
             }
           : {
-              opacity: dimmed ? 0.35 : tone === "confined" ? 0.86 : 1,
+              opacity: failed ? 0 : dimmed ? 0.35 : tone === "confined" ? 0.86 : 1,
               x: 0,
               y: 0,
               rotate: slot.rotate,
@@ -104,6 +112,10 @@ export function MediaCard({
       }}
       onClick={(event) => {
         event.stopPropagation();
+        if (failed) {
+          return;
+        }
+
         if (focused) {
           onClose();
         } else {
@@ -126,16 +138,18 @@ export function MediaCard({
         {item.type === "photo" ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={item.src}
+            src={displaySrc}
             alt=""
             className="h-full w-full object-contain"
             width={item.width}
             height={item.height}
             draggable={false}
-            decoding="sync"
+            decoding="async"
             loading="eager"
             fetchPriority={focused ? "high" : "auto"}
-            style={{ maxWidth: "100%", height: "auto" }}
+            style={{ maxWidth: "100%" }}
+            onLoad={onMediaReady}
+            onError={onMediaFailed}
           />
         ) : (
           <video
@@ -147,6 +161,10 @@ export function MediaCard({
             playsInline
             autoPlay
             preload="auto"
+            onLoadedMetadata={onMediaReady}
+            onLoadedData={onMediaReady}
+            onCanPlay={onMediaReady}
+            onError={onMediaFailed}
           />
         )}
       </div>

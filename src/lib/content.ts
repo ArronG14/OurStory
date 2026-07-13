@@ -16,6 +16,8 @@ const CONTENT_ROOT = path.join(process.cwd(), "public", "content");
 const CONFIG_ROOT = path.join(CONTENT_ROOT, "config");
 const ASSETS_ROOT = path.join(process.cwd(), "public", "assets");
 const HEIC_PREVIEW_ROOT = path.join(ASSETS_ROOT, ".heic-previews");
+const MOBILE_PREVIEW_ROOT = path.join(ASSETS_ROOT, ".mobile-previews");
+const MOBILE_PREVIEW_MAX_EDGE = 1800;
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".heic"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".mov"]);
@@ -42,6 +44,7 @@ function readPhotosFromDir(absDir: string, urlBase: string, chapterSlug: string,
       return {
         type: "photo" as const,
         src: display ?? `${urlBase}/${file}`,
+        mobileSrc: mobileImageFor(filePath, file, chapterSlug, dirName),
         width,
         height,
         orientation: orientationFor(width, height),
@@ -63,6 +66,23 @@ function displayImageFor(filePath: string, file: string, chapterSlug: string, di
   }
 
   return `/assets/.heic-previews/${chapterSlug}/${dirName}/${previewName}`;
+}
+
+function mobileImageFor(filePath: string, file: string, chapterSlug: string, dirName: string) {
+  const previewDir = path.join(MOBILE_PREVIEW_ROOT, chapterSlug, dirName);
+  const previewName = `${path.basename(file, path.extname(file))}.jpg`;
+  const previewPath = path.join(previewDir, previewName);
+
+  if (!fs.existsSync(previewPath)) {
+    fs.mkdirSync(previewDir, { recursive: true });
+    execFileSync(
+      "sips",
+      ["-Z", String(MOBILE_PREVIEW_MAX_EDGE), "-s", "format", "jpeg", filePath, "--out", previewPath],
+      { stdio: "ignore" },
+    );
+  }
+
+  return `/assets/.mobile-previews/${chapterSlug}/${dirName}/${previewName}`;
 }
 
 function readImageDimensions(filePath: string) {

@@ -284,6 +284,52 @@ function placeOne(
   return null;
 }
 
+function fallbackPlaceOne(
+  item: MediaItem,
+  index: number,
+  pageIndex: number,
+  viewport: LayoutViewport,
+  direction?: ActDirection,
+) {
+  const profile = viewportProfile(viewport);
+  const random = seededRandom(item.src.length + index * 131 + pageIndex * 997);
+  const marginX =
+    profile === "mobile"
+      ? clamp(viewport.width * 0.065, 22, 34)
+      : clamp(viewport.width * 0.035, 14, 54);
+  const marginTop =
+    profile === "mobile"
+      ? clamp(viewport.height * 0.13, 78, 112)
+      : clamp(viewport.height * 0.105, 58, 112);
+  const marginBottom =
+    profile === "mobile"
+      ? clamp(viewport.height * 0.16, 88, 136)
+      : clamp(viewport.height * 0.095, 42, 86);
+  const availableWidth = Math.max(1, viewport.width - marginX * 2);
+  const availableHeight = Math.max(1, viewport.height - marginTop - marginBottom);
+  const width = Math.min(printWidth(item, index, viewport, random), availableWidth, availableHeight / aspectFor(item));
+  const height = width * aspectFor(item);
+  const topBias = profile === "mobile" ? 0.18 : 0.38;
+  const left = marginX + (availableWidth - width) / 2;
+  const top = marginTop + Math.max(0, (availableHeight - height) * topBias);
+  const tone = direction?.tone ?? "growing";
+  const rotationScale = tone === "young" ? 1 : tone === "wedding" || tone === "confined" ? 0.35 : 0.65;
+
+  return {
+    rect: { left, top, width, height },
+    slot: {
+      left: (left / viewport.width) * 100,
+      top: (top / viewport.height) * 100,
+      widthPercent: (width / viewport.width) * 100,
+      rotate: index === 0 ? 0 : (random() - 0.5) * 1.15 * rotationScale,
+      driftX: 0,
+      driftY: profile === "mobile" ? 8 : 12,
+      delay: index * (profile === "mobile" ? 0.04 : 0.065),
+      z: index === 0 ? 14 : 2 + index,
+    },
+  };
+}
+
 function buildPage(
   items: MediaItem[],
   pageIndex: number,
@@ -300,14 +346,19 @@ function buildPage(
     if (pageItems.length >= maxItems) break;
 
     const placement = placeOne(item, pageItems.length, pageIndex, viewport, placed, direction);
-    if (!placement) {
+    const fallbackPlacement = !placement && pageItems.length === 0
+      ? fallbackPlaceOne(item, pageItems.length, pageIndex, viewport, direction)
+      : null;
+    const finalPlacement = placement ?? fallbackPlacement;
+
+    if (!finalPlacement) {
       if (pageItems.length >= maxItems) break;
       continue;
     }
 
-    placed.push(placement.rect);
+    placed.push(finalPlacement.rect);
     pageItems.push(item);
-    slots.push(placement.slot);
+    slots.push(finalPlacement.slot);
   }
 
   return { items: pageItems, slots, heroIndex: 0, consumed: pageItems.length };

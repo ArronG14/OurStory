@@ -424,44 +424,43 @@ export function ExperienceShell({
         </>
       )}
 
-      <AnimatePresence>
-        {showNavigation && (
-          <motion.nav
-            key={`${phase}-${chapterIndex}-${chapterBeat}-navigation`}
-            className="film-navigation pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+clamp(0.8rem,2.4vh,1.7rem))] z-50 flex items-start justify-between px-[clamp(0.9rem,3.6vw,2.8rem)]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: navExiting ? 0 : 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.7, ease: EASE_NATURAL }}
-            aria-label="Scene navigation"
-          >
-            {showPrevious ? (
-              <button
-                type="button"
-                className="film-navigation__control pointer-events-auto"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  navigate("previous");
-                }}
-              >
-                &larr; Previous
-              </button>
-            ) : (
-              <span />
-            )}
+      {showNavigation && (
+        <motion.nav
+          key={`${phase}-${chapterIndex}-${chapterBeat}-navigation`}
+          className="film-navigation pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+clamp(0.8rem,2.4vh,1.7rem))] z-50 flex items-start justify-between px-[clamp(0.9rem,3.6vw,2.8rem)]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: navExiting ? 0 : 1 }}
+          transition={{ duration: 0.7, ease: EASE_NATURAL }}
+          aria-label="Scene navigation"
+        >
+          {showPrevious ? (
             <button
               type="button"
               className="film-navigation__control pointer-events-auto"
+              disabled={navExiting}
               onClick={(event) => {
                 event.stopPropagation();
-                navigate("continue");
+                navigate("previous");
               }}
             >
-              {continueLabel}
+              &larr; Previous
             </button>
-          </motion.nav>
-        )}
-      </AnimatePresence>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            className="film-navigation__control pointer-events-auto"
+            disabled={navExiting}
+            onClick={(event) => {
+              event.stopPropagation();
+              navigate("continue");
+            }}
+          >
+            {continueLabel}
+          </button>
+        </motion.nav>
+      )}
     </div>
   );
 }

@@ -70,6 +70,7 @@ function StandardChapterEngine({
   }, [advanceBeat, advanceSignal]);
 
   useEffect(() => {
+    if (beat === 1 && chapter.media.length > 0) return undefined;
     const timer = window.setTimeout(onSceneReady, sceneReadyDelayForBeat(chapter, beat));
     return () => window.clearTimeout(timer);
   }, [beat, chapter, onSceneReady]);

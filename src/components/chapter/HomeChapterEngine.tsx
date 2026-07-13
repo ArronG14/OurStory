@@ -75,9 +75,12 @@ export function HomeChapterEngine({
   }, [advanceBeat, advanceSignal]);
 
   useEffect(() => {
+    if ((beat === 3 && chapter.nylaMedia.length > 0) || (beat === 4 && chapter.media.length > 0)) {
+      return undefined;
+    }
     const timer = window.setTimeout(onSceneReady, sceneReadyDelayForBeat(beat));
     return () => window.clearTimeout(timer);
-  }, [beat, onSceneReady]);
+  }, [beat, chapter.media.length, chapter.nylaMedia.length, onSceneReady]);
 
   const hasHomeMedia = chapter.media.length > 0;
 

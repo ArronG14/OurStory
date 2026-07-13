@@ -15,6 +15,7 @@ export interface ChapterPalette {
 export interface MediaItem {
   type: "photo" | "video";
   src: string;
+  mobileSrc?: string;
   width: number;
   height: number;
   orientation: Orientation;
