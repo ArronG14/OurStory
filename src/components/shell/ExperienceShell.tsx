@@ -312,7 +312,7 @@ export function ExperienceShell({
         {showNavigation && (
           <motion.nav
             key={`${phase}-${chapterIndex}-${chapterBeat}-navigation`}
-            className="film-navigation pointer-events-none absolute inset-x-0 bottom-[clamp(1rem,3.5vh,2rem)] z-50 flex items-end justify-between px-[clamp(1rem,3.6vw,2.4rem)]"
+            className="film-navigation pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+clamp(0.8rem,2.4vh,1.7rem))] z-50 flex items-start justify-between px-[clamp(0.9rem,3.6vw,2.8rem)]"
             initial={{ opacity: 0 }}
             animate={{ opacity: navExiting ? 0 : 1 }}
             exit={{ opacity: 0 }}

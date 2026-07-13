@@ -108,14 +108,16 @@ button {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: rgba(244, 237, 225, 0.72);
+  color: rgba(244, 237, 225, 0.88);
   font-family: var(--font-serif);
-  font-size: clamp(0.9rem, 1.6vw, 1.05rem);
+  font-size: clamp(1.08rem, 1.7vw, 1.28rem);
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
-  opacity: 0.22;
-  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.58);
+  min-height: 3rem;
+  padding: 0.85rem clamp(0.7rem, 1.8vw, 1rem);
+  opacity: 0.58;
+  text-shadow: 0 1px 22px rgba(0, 0, 0, 0.74), 0 0 1px rgba(0, 0, 0, 0.55);
   transition:
     color 650ms var(--ease-natural),
     opacity 650ms var(--ease-natural),
@@ -124,13 +126,14 @@ button {
 
 .film-navigation__control:hover,
 .film-navigation__control:focus-visible {
-  color: rgba(255, 250, 239, 0.92);
-  opacity: 0.78;
+  color: rgba(255, 250, 239, 0.98);
+  opacity: 0.94;
+  transform: translateY(-1px);
 }
 
 .film-navigation__control:focus-visible {
-  outline: 1px solid rgba(244, 237, 225, 0.22);
-  outline-offset: 0.45rem;
+  outline: 1px solid rgba(244, 237, 225, 0.38);
+  outline-offset: 0.18rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
