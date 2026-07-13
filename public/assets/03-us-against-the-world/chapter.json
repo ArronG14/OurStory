@@ -1,0 +1,20 @@
+{
+  "slug": "03-us-against-the-world",
+  "order": 3,
+  "title": "Us Against The World",
+  "dateRange": "2020 – June 2021",
+  "openingSentence": "A crazy pandemic stopped us going out.\n\nBut honestly...\n\nIt didn't really matter.\n\nBecause we had each other.",
+  "typedTextMode": "abbreviated",
+  "reflection": "From the countless double workouts to the countless double shots...\n\nIt turned into one of the strangest periods of our lives.\n\nYet somehow...\n\nOne we'll never forget.",
+  "palette": {
+    "background": "#090a0c",
+    "backgroundSecondary": "#0d0f12",
+    "foreground": "#e9e6e0",
+    "foregroundMuted": "#7d838c",
+    "accent": "#8f9aa8"
+  },
+  "interfaceDensity": "reduced",
+  "interactionDensity": "low",
+  "transitionType": "hold-to-black",
+  "song": { "title": "Placeholder Song Three", "artist": "Placeholder Artist", "src": null }
+}

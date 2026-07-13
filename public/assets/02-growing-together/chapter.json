@@ -1,0 +1,20 @@
+{
+  "slug": "02-growing-together",
+  "order": 2,
+  "title": "Growing Together",
+  "dateRange": "2018 – 2020",
+  "openingSentence": "As we approached our third anniversary, everything started becoming very real.\n\nWe weren't the same kids who first met anymore.\n\nWe were genuinely growing together.",
+  "typedTextMode": "abbreviated",
+  "reflection": "From the girl I met in college...\n\nTo celebrating our third, fourth and fifth anniversaries.\n\nWatching you graduate.\n\nCelebrating birthdays.\n\nTravelling together.\n\nSupporting each other through every milestone.\n\nSomewhere along the way, we stopped simply making memories.\n\nWe started building a life together.",
+  "palette": {
+    "background": "#141009",
+    "backgroundSecondary": "#1a140b",
+    "foreground": "#f4ede1",
+    "foregroundMuted": "#b8ac96",
+    "accent": "#cba15c"
+  },
+  "interfaceDensity": "full",
+  "interactionDensity": "high",
+  "transitionType": "crossfade",
+  "song": { "title": "Placeholder Song Two", "artist": "Placeholder Artist", "src": null }
+}

@@ -46,6 +46,8 @@ export interface ChapterConfig {
 
 export interface Chapter extends ChapterConfig {
   media: MediaItem[];
+  nylaMedia: MediaItem[];
+  laterMedia: MediaItem[];
 }
 
 export interface ExperienceConfig {

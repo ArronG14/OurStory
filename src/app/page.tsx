@@ -8,7 +8,7 @@ import {
 import { ExperienceShell } from "@/components/shell/ExperienceShell";
 
 export default function Home() {
-  const chapters = getAllChapters();
+  const chapters = getAllChapters().filter((chapter) => chapter.slug !== "08-finale");
   const experience = getExperienceConfig();
   const letterText = getLetterText();
   const credits = getCreditsConfig();

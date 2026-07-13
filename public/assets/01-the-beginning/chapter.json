@@ -1,0 +1,20 @@
+{
+  "slug": "01-the-beginning",
+  "order": 1,
+  "title": "The Beginning",
+  "dateRange": "2015 – 2017",
+  "openingSentence": "The next two years involved our younger selves spending countless hours together.",
+  "typedTextMode": "full",
+  "reflection": "The beginning really was special.\n\nLooking back now, we had absolutely no idea that these random little moments would become memories we'd still be talking about years later.\n\nWe weren't trying to build a future.\n\nWe were just enjoying every single day together.\n\nFunny how life works sometimes.",
+  "palette": {
+    "background": "#0b0f14",
+    "backgroundSecondary": "#10151b",
+    "foreground": "#f4ede1",
+    "foregroundMuted": "#a9b0b8",
+    "accent": "#cba15c"
+  },
+  "interfaceDensity": "full",
+  "interactionDensity": "high",
+  "transitionType": "crossfade",
+  "song": { "title": "Placeholder Song One", "artist": "Placeholder Artist", "src": null }
+}

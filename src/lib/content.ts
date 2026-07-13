@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { execFileSync } from "child_process";
 import { imageSize } from "image-size";
 import type {
   Chapter,
@@ -12,35 +13,35 @@ import type {
 } from "./types";
 
 const CONTENT_ROOT = path.join(process.cwd(), "public", "content");
-const CHAPTERS_ROOT = path.join(CONTENT_ROOT, "chapters");
 const CONFIG_ROOT = path.join(CONTENT_ROOT, "config");
+const ASSETS_ROOT = path.join(process.cwd(), "public", "assets");
+const HEIC_PREVIEW_ROOT = path.join(ASSETS_ROOT, ".heic-previews");
 
-const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif", ".svg"]);
-const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".mov"]);
+const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".heic"]);
+const VIDEO_EXTENSIONS = new Set([".mp4", ".mov"]);
 
 function orientationFor(width: number, height: number): Orientation {
   if (Math.abs(width - height) < 4) return "square";
   return width > height ? "landscape" : "portrait";
 }
 
-function readPhotos(chapterSlug: string): MediaItem[] {
-  const dir = path.join(CHAPTERS_ROOT, chapterSlug, "photos");
-  if (!fs.existsSync(dir)) return [];
+function readPhotosFromDir(absDir: string, urlBase: string, chapterSlug: string, dirName: string): MediaItem[] {
+  if (!fs.existsSync(absDir)) return [];
 
   return fs
-    .readdirSync(dir)
+    .readdirSync(absDir)
     .filter((file) => IMAGE_EXTENSIONS.has(path.extname(file).toLowerCase()))
     .sort()
     .map((file) => {
-      const filePath = path.join(dir, file);
-      const buffer = fs.readFileSync(filePath);
-      const dimensions = imageSize(buffer);
+      const filePath = path.join(absDir, file);
+      const display = displayImageFor(filePath, file, chapterSlug, dirName);
+      const dimensions = readImageDimensions(filePath);
       const width = dimensions.width ?? 1600;
       const height = dimensions.height ?? 1000;
 
       return {
         type: "photo" as const,
-        src: `/content/chapters/${chapterSlug}/photos/${file}`,
+        src: display ?? `${urlBase}/${file}`,
         width,
         height,
         orientation: orientationFor(width, height),
@@ -49,12 +50,35 @@ function readPhotos(chapterSlug: string): MediaItem[] {
     });
 }
 
-function readVideos(chapterSlug: string): MediaItem[] {
-  const dir = path.join(CHAPTERS_ROOT, chapterSlug, "videos");
-  if (!fs.existsSync(dir)) return [];
+function displayImageFor(filePath: string, file: string, chapterSlug: string, dirName: string) {
+  if (path.extname(file).toLowerCase() !== ".heic") return null;
+
+  const previewDir = path.join(HEIC_PREVIEW_ROOT, chapterSlug, dirName);
+  const previewName = `${path.basename(file, path.extname(file))}.jpg`;
+  const previewPath = path.join(previewDir, previewName);
+
+  if (!fs.existsSync(previewPath)) {
+    fs.mkdirSync(previewDir, { recursive: true });
+    execFileSync("sips", ["-s", "format", "jpeg", filePath, "--out", previewPath], { stdio: "ignore" });
+  }
+
+  return `/assets/.heic-previews/${chapterSlug}/${dirName}/${previewName}`;
+}
+
+function readImageDimensions(filePath: string) {
+  try {
+    const buffer = fs.readFileSync(filePath);
+    return imageSize(buffer);
+  } catch {
+    return { width: 1600, height: 1000 };
+  }
+}
+
+function readVideosFromDir(absDir: string, urlBase: string): MediaItem[] {
+  if (!fs.existsSync(absDir)) return [];
 
   return fs
-    .readdirSync(dir)
+    .readdirSync(absDir)
     .filter((file) => VIDEO_EXTENSIONS.has(path.extname(file).toLowerCase()))
     .sort()
     .map((file) => {
@@ -64,7 +88,7 @@ function readVideos(chapterSlug: string): MediaItem[] {
 
       return {
         type: "video" as const,
-        src: `/content/chapters/${chapterSlug}/videos/${file}`,
+        src: `${urlBase}/${file}`,
         width,
         height,
         orientation: orientationFor(width, height),
@@ -73,28 +97,69 @@ function readVideos(chapterSlug: string): MediaItem[] {
     });
 }
 
+function readPhotos(chapterSlug: string): MediaItem[] {
+  return readMediaFromDirs(chapterSlug, "photo");
+}
+
+function readVideos(chapterSlug: string): MediaItem[] {
+  return readMediaFromDirs(chapterSlug, "video");
+}
+
+function readNylaMedia(): MediaItem[] {
+  return [
+    ...readPhotos("08-nyla"),
+    ...readVideos("08-nyla"),
+  ];
+}
+
+function readMediaFromDirs(chapterSlug: string, type: "photo" | "video"): MediaItem[] {
+  const dirs =
+    type === "photo"
+      ? [
+          ["photos", "photos"],
+          ["images", "images"],
+        ]
+      : [
+          ["videos", "videos"],
+          ["photos", "photos"],
+          ["images", "images"],
+        ];
+
+  return dirs.flatMap(([dirName, urlName]) => {
+    const absDir = path.join(ASSETS_ROOT, chapterSlug, dirName);
+    const urlBase = `/assets/${chapterSlug}/${urlName}`;
+    return type === "photo" ? readPhotosFromDir(absDir, urlBase, chapterSlug, dirName) : readVideosFromDir(absDir, urlBase);
+  });
+}
+
 export function getChapterSlugs(): string[] {
-  if (!fs.existsSync(CHAPTERS_ROOT)) return [];
+  if (!fs.existsSync(ASSETS_ROOT)) return [];
   return fs
-    .readdirSync(CHAPTERS_ROOT)
-    .filter((entry) => fs.statSync(path.join(CHAPTERS_ROOT, entry)).isDirectory())
+    .readdirSync(ASSETS_ROOT)
+    .filter((entry) => !entry.startsWith(".") && entry !== "08-nyla")
+    .filter((entry) => {
+      const dir = path.join(ASSETS_ROOT, entry);
+      return fs.statSync(dir).isDirectory() && fs.existsSync(path.join(dir, "chapter.json"));
+    })
     .sort();
 }
 
 export function getChapter(slug: string): Chapter | null {
-  const configPath = path.join(CHAPTERS_ROOT, slug, "chapter.json");
+  const configPath = path.join(ASSETS_ROOT, slug, "chapter.json");
   if (!fs.existsSync(configPath)) return null;
 
   const config = JSON.parse(fs.readFileSync(configPath, "utf-8")) as ChapterConfig;
-  const songFile = path.join(CHAPTERS_ROOT, slug, "song.mp3");
+  const songFile = path.join(ASSETS_ROOT, slug, "song.mp3");
 
   return {
     ...config,
     song: {
       ...config.song,
-      src: fs.existsSync(songFile) ? `/content/chapters/${slug}/song.mp3` : null,
+      src: fs.existsSync(songFile) ? `/assets/${slug}/song.mp3` : null,
     },
     media: [...readPhotos(slug), ...readVideos(slug)],
+    nylaMedia: slug === "07-home" ? readNylaMedia() : [],
+    laterMedia: [],
   };
 }
 

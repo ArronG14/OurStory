@@ -1,0 +1,20 @@
+{
+  "slug": "07-home",
+  "order": 7,
+  "title": "Home",
+  "dateRange": "2024 – Present",
+  "openingSentence": "The wedding may have been over.\n\nBut our story was only just beginning.",
+  "typedTextMode": "abbreviated",
+  "reflection": "We moved into our first home.\n\nStarted building our life together.\n\nAnd then...\n\nOur little family got just a little bit bigger.",
+  "palette": {
+    "background": "#171310",
+    "backgroundSecondary": "#1d1712",
+    "foreground": "#f5ece0",
+    "foregroundMuted": "#bcae98",
+    "accent": "#cba15c"
+  },
+  "interfaceDensity": "reduced",
+  "interactionDensity": "low",
+  "transitionType": "crossfade",
+  "song": { "title": "Placeholder Song Seven", "artist": "Placeholder Artist", "src": null }
+}

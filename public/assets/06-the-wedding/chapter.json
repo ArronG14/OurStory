@@ -1,0 +1,21 @@
+{
+  "slug": "06-the-wedding",
+  "order": 6,
+  "title": "The Wedding",
+  "dateRange": "July 2024",
+  "location": "Jamaica",
+  "openingSentence": "",
+  "typedTextMode": "full",
+  "reflection": "As long ago as it already feels...\n\nThis week will never be forgotten.\n\nHands down the best wedding I've ever been to.\n\nAnd it only took us nine years to get there.",
+  "palette": {
+    "background": "#21150a",
+    "backgroundSecondary": "#2a1a0a",
+    "foreground": "#fbf1de",
+    "foregroundMuted": "#d8bd8a",
+    "accent": "#eec27a"
+  },
+  "interfaceDensity": "none",
+  "interactionDensity": "none",
+  "transitionType": "hold-to-black",
+  "song": { "title": "Placeholder Song Six", "artist": "Placeholder Artist", "src": null }
+}
