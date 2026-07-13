@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { EASE_NATURAL } from "@/lib/motion";
 
 interface LandingTitleCardProps {
+  onBegin?: () => void;
   onComplete: () => void;
 }
 
-export function LandingTitleCard({ onComplete }: LandingTitleCardProps) {
+export function LandingTitleCard({ onBegin, onComplete }: LandingTitleCardProps) {
   const [departing, setDeparting] = useState(false);
   const completeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reduceMotion = useReducedMotion();
@@ -21,6 +22,7 @@ export function LandingTitleCard({ onComplete }: LandingTitleCardProps) {
 
   const begin = () => {
     if (departing) return;
+    onBegin?.();
     setDeparting(true);
     completeTimer.current = setTimeout(onComplete, reduceMotion ? 650 : 4550);
   };

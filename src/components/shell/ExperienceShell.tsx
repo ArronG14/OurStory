@@ -12,11 +12,16 @@ import { LetterScene } from "@/components/letter/LetterScene";
 import { CreditsScene } from "@/components/credits/CreditsScene";
 import { PostCreditScene } from "@/components/postcredit/PostCreditScene";
 
-type Phase = "landing" | "intro" | "chapters" | "letter" | "credits" | "postcredit" | "revisit";
+type Phase = "landing" | "prelude" | "intro" | "chapters" | "letter" | "credits" | "postcredit" | "revisit";
 type NavDirection = "previous" | "continue";
+type SoundtrackAct = "silent" | "act-one" | "act-two";
 
-const SOUNDTRACK_SRC = "/assets/soundtrack/earned-it.mp3";
-const SOUNDTRACK_VOLUME = 0.26;
+const ACT_ONE_SOUNDTRACK_SRC = "/assets/soundtrack/is-this-love.mp3";
+const ACT_TWO_SOUNDTRACK_SRC = "/assets/soundtrack/earned-it.mp3";
+const SOUNDTRACK_VOLUME = 0.22;
+const ACT_ONE_FADE_IN_MS = 2600;
+const ACT_TWO_CROSSFADE_MS = 4200;
+const PRELUDE_HOLD_MS = 1000;
 const NAV_EXIT_DELAY_MS = 180;
 
 function lastBeatForChapter(chapter: Chapter | undefined) {
@@ -46,16 +51,22 @@ export function ExperienceShell({
   const [sceneReady, setSceneReady] = useState(false);
   const [navExiting, setNavExiting] = useState(false);
   const [chapterAdvanceSignal, setChapterAdvanceSignal] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fadeTimerRef = useRef<number | null>(null);
+  const actOneAudioRef = useRef<HTMLAudioElement | null>(null);
+  const actTwoAudioRef = useRef<HTMLAudioElement | null>(null);
+  const soundtrackActRef = useRef<SoundtrackAct>("silent");
+  const fadeTimerRefs = useRef<number[]>([]);
   const navTimerRef = useRef<number | null>(null);
+  const preludeTimerRef = useRef<number | null>(null);
   const lastAdvanceAt = useRef(0);
 
   useEffect(() => {
     return () => {
-      if (fadeTimerRef.current) window.clearInterval(fadeTimerRef.current);
+      fadeTimerRefs.current.forEach((timer) => window.clearInterval(timer));
+      fadeTimerRefs.current = [];
       if (navTimerRef.current) window.clearTimeout(navTimerRef.current);
-      audioRef.current?.pause();
+      if (preludeTimerRef.current) window.clearTimeout(preludeTimerRef.current);
+      actOneAudioRef.current?.pause();
+      actTwoAudioRef.current?.pause();
     };
   }, []);
 
@@ -67,40 +78,127 @@ export function ExperienceShell({
     return () => window.clearTimeout(timer);
   }, [phase, chapterIndex, chapterBeat, revisitIndex, revisitBeat]);
 
-  const fadeInSoundtrack = useCallback(() => {
-    if (audioRef.current) return;
+  const removeFadeTimer = useCallback((timer: number) => {
+    fadeTimerRefs.current = fadeTimerRefs.current.filter((value) => value !== timer);
+  }, []);
 
-    const audio = new Audio(SOUNDTRACK_SRC);
-    audio.loop = false;
-    audio.preload = "auto";
-    audio.volume = 0;
-    audioRef.current = audio;
+  const getActOneAudio = useCallback(() => {
+    if (!actOneAudioRef.current) {
+      const audio = new Audio(ACT_ONE_SOUNDTRACK_SRC);
+      audio.loop = false;
+      audio.preload = "auto";
+      audio.volume = 0;
+      actOneAudioRef.current = audio;
+    }
 
-    audio.play().catch(() => {
-      if (fadeTimerRef.current) {
-        window.clearInterval(fadeTimerRef.current);
-        fadeTimerRef.current = null;
-      }
-      audioRef.current = null;
-    });
+    return actOneAudioRef.current;
+  }, []);
 
-    const fadeStartedAt = Date.now();
-    const fadeDuration = 2800;
-    fadeTimerRef.current = window.setInterval(() => {
-      const progress = Math.min((Date.now() - fadeStartedAt) / fadeDuration, 1);
-      audio.volume = progress * SOUNDTRACK_VOLUME;
+  const getActTwoAudio = useCallback(() => {
+    if (!actTwoAudioRef.current) {
+      const audio = new Audio(ACT_TWO_SOUNDTRACK_SRC);
+      audio.loop = false;
+      audio.preload = "auto";
+      audio.volume = 0;
+      actTwoAudioRef.current = audio;
+    }
 
-      if (progress >= 1 && fadeTimerRef.current) {
-        window.clearInterval(fadeTimerRef.current);
-        fadeTimerRef.current = null;
+    return actTwoAudioRef.current;
+  }, []);
+
+  const fadeAudio = useCallback((
+    audio: HTMLAudioElement,
+    toVolume: number,
+    duration: number,
+    onComplete?: () => void,
+  ) => {
+    const fromVolume = audio.volume;
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      const progress = Math.min((Date.now() - startedAt) / duration, 1);
+      audio.volume = fromVolume + (toVolume - fromVolume) * progress;
+
+      if (progress >= 1) {
+        window.clearInterval(timer);
+        removeFadeTimer(timer);
+        audio.volume = toVolume;
+        onComplete?.();
       }
     }, 80);
+
+    fadeTimerRefs.current.push(timer);
+  }, [removeFadeTimer]);
+
+  const primeActOneSoundtrack = useCallback(() => {
+    const audio = getActOneAudio();
+    audio.volume = 0;
+    audio.currentTime = 0;
+    audio.play()
+      .then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      })
+      .catch(() => {
+        audio.currentTime = 0;
+      });
+  }, [getActOneAudio]);
+
+  const startActOneSoundtrack = useCallback(() => {
+    if (soundtrackActRef.current !== "silent") return;
+
+    const audio = getActOneAudio();
+    audio.volume = 0;
+    audio.currentTime = 0;
+    soundtrackActRef.current = "act-one";
+
+    audio.play().catch(() => {
+      soundtrackActRef.current = "silent";
+    });
+
+    fadeAudio(audio, SOUNDTRACK_VOLUME, ACT_ONE_FADE_IN_MS);
+  }, [fadeAudio, getActOneAudio]);
+
+  const transitionToActTwoSoundtrack = useCallback(() => {
+    if (soundtrackActRef.current === "act-two") return;
+
+    const actOneAudio = getActOneAudio();
+    const actTwoAudio = getActTwoAudio();
+    soundtrackActRef.current = "act-two";
+
+    actTwoAudio.volume = 0;
+    actTwoAudio.currentTime = 0;
+    actTwoAudio.play().catch(() => {});
+
+    fadeAudio(actOneAudio, 0, ACT_TWO_CROSSFADE_MS, () => {
+      actOneAudio.pause();
+    });
+    fadeAudio(actTwoAudio, SOUNDTRACK_VOLUME, ACT_TWO_CROSSFADE_MS);
+  }, [fadeAudio, getActOneAudio, getActTwoAudio]);
+
+  const stopSoundtrack = useCallback(() => {
+    fadeTimerRefs.current.forEach((timer) => window.clearInterval(timer));
+    fadeTimerRefs.current = [];
+    actOneAudioRef.current?.pause();
+    actTwoAudioRef.current?.pause();
+    if (actOneAudioRef.current) {
+      actOneAudioRef.current.volume = 0;
+      actOneAudioRef.current.currentTime = 0;
+    }
+    if (actTwoAudioRef.current) {
+      actTwoAudioRef.current.volume = 0;
+      actTwoAudioRef.current.currentTime = 0;
+    }
+    soundtrackActRef.current = "silent";
   }, []);
 
   const beginExperience = useCallback(() => {
-    fadeInSoundtrack();
-    setPhase("intro");
-  }, [fadeInSoundtrack]);
+    setPhase("prelude");
+    if (preludeTimerRef.current) window.clearTimeout(preludeTimerRef.current);
+    preludeTimerRef.current = window.setTimeout(() => {
+      startActOneSoundtrack();
+      setPhase("intro");
+    }, PRELUDE_HOLD_MS);
+  }, [startActOneSoundtrack]);
 
   const onChapterComplete = useCallback(() => {
     if (chapterIndex < chapters.length - 1) {
@@ -149,6 +247,7 @@ export function ExperienceShell({
     lastAdvanceAt.current = now;
 
     if (phase === "intro") {
+      stopSoundtrack();
       setPhase("landing");
       return;
     }
@@ -181,7 +280,7 @@ export function ExperienceShell({
     if (phase === "credits") {
       setPhase("letter");
     }
-  }, [chapterBeat, chapterIndex, chapters, phase]);
+  }, [chapterBeat, chapterIndex, chapters, phase, stopSoundtrack]);
 
   const navigate = useCallback((direction: NavDirection) => {
     if (!sceneReady || navExiting) return;
@@ -200,6 +299,11 @@ export function ExperienceShell({
   const showPrevious = showNavigation;
   const continueLabel = phase === "credits" ? "Skip Credits \u2192" : "Continue \u2192";
 
+  useEffect(() => {
+    if (phase !== "chapters" || activeChapter?.slug !== "06-the-wedding") return;
+    transitionToActTwoSoundtrack();
+  }, [activeChapter?.slug, phase, transitionToActTwoSoundtrack]);
+
   return (
     <div
       className="relative h-dvh w-dvw overflow-hidden bg-black"
@@ -214,8 +318,20 @@ export function ExperienceShell({
       <AnimatePresence mode="wait">
         {phase === "landing" && (
           <motion.div key="landing" className="absolute inset-0" exit={{ opacity: 1 }}>
-            <LandingTitleCard onComplete={beginExperience} />
+            <LandingTitleCard onBegin={primeActOneSoundtrack} onComplete={beginExperience} />
           </motion.div>
+        )}
+
+        {phase === "prelude" && (
+          <motion.div
+            key="prelude"
+            className="absolute inset-0 bg-black"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: DURATION.standard, ease: EASE_NATURAL }}
+            aria-hidden
+          />
         )}
 
         {phase === "intro" && (
