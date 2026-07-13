@@ -187,3 +187,26 @@ button {
   transform: rotate(-3deg);
   opacity: 0.88;
 }
+
+@media (max-width: 639px) {
+  .exhibit-label {
+    right: auto !important;
+    bottom: clamp(4.25rem, 8dvh, 5.25rem) !important;
+    left: 50% !important;
+    top: auto !important;
+    width: min(84vw, 18rem) !important;
+    max-height: 29dvh;
+    overflow: hidden;
+    transform: translateX(-50%);
+  }
+
+  .exhibit-label ul {
+    margin-top: 0.55rem;
+    display: grid;
+    gap: 0.28rem;
+  }
+
+  .exhibit-label li {
+    gap: 0.45rem;
+  }
+}

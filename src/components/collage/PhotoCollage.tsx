@@ -37,6 +37,7 @@ export function PhotoCollage({
   const exhibitLabel = getExhibitLabel(labelSlug ?? chapter?.slug ?? "");
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewport, setViewport] = useState({ width: 1280, height: 720 });
+  const [hasMeasuredViewport, setHasMeasuredViewport] = useState(false);
   const pages = useMemo(() => layoutCollagePages(media, direction, viewport, exhibitLabel), [media, direction, viewport, exhibitLabel]);
   const [pageIndex, setPageIndex] = useState(0);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
@@ -52,9 +53,10 @@ export function PhotoCollage({
 
     const update = () => {
       const rect = element.getBoundingClientRect();
+      const width = Math.round(rect.width);
+      const height = Math.round(rect.height);
+      if (width > 0 && height > 0) setHasMeasuredViewport(true);
       setViewport((current) => {
-        const width = Math.round(rect.width);
-        const height = Math.round(rect.height);
         if (Math.abs(current.width - width) < 2 && Math.abs(current.height - height) < 2) return current;
         return { width, height };
       });
@@ -151,6 +153,8 @@ export function PhotoCollage({
     let timer: number | null = null;
     const latestSlotDelay = activePage?.slots.reduce((latest, slot) => Math.max(latest, slot.delay), 0) ?? 0;
 
+    if (!hasMeasuredViewport) return undefined;
+
     Promise.all((activePage?.items ?? []).map(preloadMedia)).finally(() => {
       if (cancelled) return;
       timer = window.setTimeout(() => onReady?.(), (latestSlotDelay + 2.15) * 1000);
@@ -160,7 +164,7 @@ export function PhotoCollage({
       cancelled = true;
       if (timer) window.clearTimeout(timer);
     };
-  }, [activePage, onReady, preloadMedia]);
+  }, [activePage, hasMeasuredViewport, onReady, preloadMedia]);
 
   return (
     <div
@@ -197,12 +201,12 @@ export function PhotoCollage({
         </motion.header>
       )}
 
-      {exhibitLabel && focusedIndex === null && <ExhibitLabel label={exhibitLabel} />}
+      {hasMeasuredViewport && exhibitLabel && focusedIndex === null && <ExhibitLabel label={exhibitLabel} />}
 
       <AnimatePresence mode="wait">
         <motion.div
           key={safePageIndex}
-          className="absolute inset-0 z-20"
+          className={`absolute inset-0 z-20 ${hasMeasuredViewport ? "visible" : "invisible"}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

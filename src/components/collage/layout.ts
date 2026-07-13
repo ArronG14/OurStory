@@ -31,6 +31,8 @@ interface PrintRect {
   height: number;
 }
 
+type ViewportProfile = "mobile" | "tablet" | "desktop";
+
 function seededRandom(seed: number) {
   let value = seed;
   return () => {
@@ -70,10 +72,24 @@ function aspectFor(item: MediaItem) {
   return item.height / item.width;
 }
 
+function viewportProfile(viewport: LayoutViewport): ViewportProfile {
+  if (viewport.width < 640) return "mobile";
+  if (viewport.width < 1024 || viewport.height < 680) return "tablet";
+  return "desktop";
+}
+
+function maxItemsFor(viewport: LayoutViewport) {
+  const profile = viewportProfile(viewport);
+  if (profile === "mobile") return viewport.height < 620 ? 1 : 2;
+  if (profile === "tablet") return 3;
+  return 4;
+}
+
 function printWidth(item: MediaItem, index: number, viewport: LayoutViewport, random: () => number) {
+  const profile = viewportProfile(viewport);
   const shortSide = Math.min(viewport.width, viewport.height);
   const longSide = Math.max(viewport.width, viewport.height);
-  const narrowScreenScale = viewport.width < 520 ? 1.75 : viewport.width < 820 ? 1.08 : 1;
+  const narrowScreenScale = profile === "mobile" ? 1.92 : profile === "tablet" ? 1.12 : 1;
   const base =
     clamp(Math.sqrt(viewport.width * viewport.height) * 0.145, shortSide * 0.17, longSide * 0.15) *
     narrowScreenScale;
@@ -81,14 +97,26 @@ function printWidth(item: MediaItem, index: number, viewport: LayoutViewport, ra
     item.orientation === "portrait" ? 0.76 :
     item.orientation === "landscape" ? 1.08 :
     0.9;
-  const hero = index === 0 ? 1.22 : 1;
+  const hero = index === 0 ? (profile === "mobile" ? 1.38 : 1.22) : 1;
   const variation = index === 0 ? 1 : 0.9 + random() * 0.2;
+  const mobileWidthCap =
+    item.orientation === "landscape"
+      ? index === 0 ? 0.84 : 0.66
+      : item.orientation === "portrait"
+        ? index === 0 ? 0.68 : 0.52
+        : index === 0 ? 0.74 : 0.58;
   const maxWidth =
     viewport.width *
-    (viewport.width < 520
-      ? index === 0 ? 0.4 : 0.32
-      : index === 0 ? 0.28 : 0.21);
-  const maxHeight = viewport.height * (index === 0 ? 0.5 : 0.34);
+    (profile === "mobile"
+      ? mobileWidthCap
+      : profile === "tablet"
+        ? index === 0 ? 0.34 : 0.25
+        : index === 0 ? 0.28 : 0.21);
+  const maxHeight =
+    viewport.height *
+    (profile === "mobile"
+      ? index === 0 ? 0.44 : 0.31
+      : index === 0 ? 0.5 : 0.34);
 
   return Math.min(base * orientation * hero * variation, maxWidth, maxHeight / aspectFor(item));
 }
@@ -111,6 +139,18 @@ function center(rect: PrintRect) {
 
 function exhibitLabelRect(label: ExhibitLabelContent | null | undefined, viewport: LayoutViewport): PrintRect | null {
   if (!label) return null;
+
+  const profile = viewportProfile(viewport);
+  if (profile === "mobile") {
+    const width = Math.min(viewport.width * 0.84, 288);
+    const height = Math.min(viewport.height * 0.28, 96 + label.lines.length * 20);
+    return {
+      left: (viewport.width - width) / 2,
+      top: viewport.height - clamp(viewport.height * 0.08, 48, 72) - height,
+      width,
+      height,
+    };
+  }
 
   const width = Math.min(viewport.width * 0.76, 320) + 36;
   const height = Math.min(viewport.height * 0.48, 102 + label.lines.length * 28) + 26;
@@ -172,16 +212,29 @@ function placeOne(
   direction?: ActDirection,
 ) {
   const tone = direction?.tone ?? "growing";
+  const profile = viewportProfile(viewport);
   const random = seededRandom(item.src.length + index * 131 + pageIndex * 997 + tone.length * 17);
-  const marginX = clamp(viewport.width * 0.035, 14, 54);
-  const marginTop = clamp(viewport.height * 0.105, 58, 112);
-  const marginBottom = clamp(viewport.height * 0.095, 42, 86);
-  const gap = clamp(Math.sqrt(viewport.width * viewport.height) * 0.018, 12, 28);
+  const marginX =
+    profile === "mobile"
+      ? clamp(viewport.width * 0.065, 22, 34)
+      : clamp(viewport.width * 0.035, 14, 54);
+  const marginTop =
+    profile === "mobile"
+      ? clamp(viewport.height * 0.13, 78, 112)
+      : clamp(viewport.height * 0.105, 58, 112);
+  const marginBottom =
+    profile === "mobile"
+      ? clamp(viewport.height * 0.16, 88, 136)
+      : clamp(viewport.height * 0.095, 42, 86);
+  const gap =
+    profile === "mobile"
+      ? clamp(Math.sqrt(viewport.width * viewport.height) * 0.03, 22, 36)
+      : clamp(Math.sqrt(viewport.width * viewport.height) * 0.018, 12, 28);
   const availableWidth = viewport.width - marginX * 2;
   const availableHeight = viewport.height - marginTop - marginBottom;
-  const attempts = index === 0 ? 80 : 220;
+  const attempts = profile === "mobile" ? 140 : index === 0 ? 80 : 220;
 
-  for (const scale of [1, 0.94, 0.88]) {
+  for (const scale of profile === "mobile" ? [1, 0.92, 0.84, 0.76] : [1, 0.94, 0.88]) {
     const width = printWidth(item, index, viewport, random) * scale;
     const height = width * aspectFor(item);
     if (height > availableHeight || width > availableWidth) continue;
@@ -189,9 +242,15 @@ function placeOne(
     let best: { rect: PrintRect; score: number } | null = null;
     for (let attempt = 0; attempt < attempts; attempt += 1) {
       const spread = attempt / attempts;
-      const preferEdge = placed.length > 3 && random() > 0.45;
-      const xBias = preferEdge ? (random() > 0.5 ? random() * 0.22 : 0.78 + random() * 0.22) : random();
-      const yBias = preferEdge ? (random() > 0.5 ? random() * 0.24 : 0.72 + random() * 0.28) : random();
+      const preferEdge = profile !== "mobile" && placed.length > 3 && random() > 0.45;
+      const xBias =
+        profile === "mobile"
+          ? 0.5 + (random() - 0.5) * (index === 0 ? 0.34 : 0.56)
+          : preferEdge ? (random() > 0.5 ? random() * 0.22 : 0.78 + random() * 0.22) : random();
+      const yBias =
+        profile === "mobile"
+          ? index === 0 ? 0.12 + random() * 0.32 : 0.56 + random() * 0.34
+          : preferEdge ? (random() > 0.5 ? random() * 0.24 : 0.72 + random() * 0.28) : random();
       const left = marginX + xBias * (availableWidth - width);
       const top = marginTop + yBias * (availableHeight - height);
       const rect = { left, top, width, height };
@@ -204,16 +263,18 @@ function placeOne(
 
     if (best) {
       const rotationScale = tone === "young" ? 1 : tone === "wedding" || tone === "confined" ? 0.35 : 0.65;
+      const rotateRange = profile === "mobile" ? 1.15 : 3.8;
+      const driftRange = profile === "mobile" ? 12 : 26;
       return {
         rect: best.rect,
         slot: {
           left: (best.rect.left / viewport.width) * 100,
           top: (best.rect.top / viewport.height) * 100,
           widthPercent: (best.rect.width / viewport.width) * 100,
-          rotate: index === 0 ? (pageIndex % 2 === 0 ? -0.5 : 0.5) : (random() - 0.5) * 3.8 * rotationScale,
-          driftX: (random() - 0.5) * 26,
-          driftY: 10 + random() * 14,
-          delay: index * (tone === "wedding" ? 0.045 : 0.065),
+          rotate: index === 0 ? (profile === "mobile" ? 0 : pageIndex % 2 === 0 ? -0.5 : 0.5) : (random() - 0.5) * rotateRange * rotationScale,
+          driftX: (random() - 0.5) * driftRange,
+          driftY: profile === "mobile" ? 6 + random() * 8 : 10 + random() * 14,
+          delay: index * (profile === "mobile" ? 0.04 : tone === "wedding" ? 0.045 : 0.065),
           z: index === 0 ? 14 : 2 + index,
         },
       };
@@ -233,11 +294,14 @@ function buildPage(
   const placed: PrintRect[] = reservedRect ? [reservedRect] : [];
   const pageItems: MediaItem[] = [];
   const slots: CollageSlot[] = [];
+  const maxItems = maxItemsFor(viewport);
 
   for (const item of items) {
+    if (pageItems.length >= maxItems) break;
+
     const placement = placeOne(item, pageItems.length, pageIndex, viewport, placed, direction);
     if (!placement) {
-      if (pageItems.length >= 4) break;
+      if (pageItems.length >= maxItems) break;
       continue;
     }
 

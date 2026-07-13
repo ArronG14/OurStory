@@ -129,10 +129,13 @@ export function MediaCard({
             src={item.src}
             alt=""
             className="h-full w-full object-contain"
+            width={item.width}
+            height={item.height}
             draggable={false}
             decoding="sync"
             loading="eager"
             fetchPriority={focused ? "high" : "auto"}
+            style={{ maxWidth: "100%", height: "auto" }}
           />
         ) : (
           <video
